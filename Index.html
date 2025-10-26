@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last Seen Tracker</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Flatpickr (Aesthetic Calendar) CSS and JS -->
+    <!-- We are ONLY using this for the VISUAL calendar, not input -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <!-- Load Google Font (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Use Inter font family */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Style the native date/time picker */
+        input[type="datetime-local"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: #faf5ff; /* bg-violet-50 */
+            border: 1px solid #ddd6fe; /* border-violet-200 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 0.75rem 1rem;
+            color: #5b21b6; /* text-violet-700 */
+            width: 100%;
+            font-weight: 500;
+        }
+
+        /* Style the calendar icon for the picker */
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(30%) sepia(90%) saturate(2000%) hue-rotate(250deg) brightness(90%) contrast(90%);
+        }
+        
+        /* --- Flatpickr Custom Aesthetic Theme (for VISUAL calendar) --- */
+        .flatpickr-calendar {
+            background: #faf5ff; /* bg-violet-50 */
+            border-radius: 0.75rem; /* rounded-lg */
+            box-shadow: none; /* No shadow for inline version */
+            border: 1px solid #e9d5ff; /* border-violet-200 */
+            color: #5b21b6; /* text-violet-700 */
+        }
+        
+        /* Make the inline visual calendar read-only */
+        #visualCalendar .flatpickr-day,
+        #visualCalendar .flatpickr-months,
+        #visualCalendar .flatpickr-current-month {
+            pointer-events: none;
+        }
+
+        .flatpickr-day.today {
+            border-color: #a78bfa; /* violet-400 */
+            color: #5b21b6;
+            font-weight: bold;
+        }
+        
+        /* --- "Better" Calendar Range Styling --- */
+        .flatpickr-day.startRange,
+        .flatpickr-day.endRange {
+            background: #6d28d9; /* Darker purple */
+            border-color: #6d28d9;
+            color: #ffffff;
+        }
+        
+        .flatpickr-day.inRange:not(.startRange):not(.endRange) {
+            background: #ede9fe; /* Very light purple */
+            border-color: #ede9fe;
+            color: #5b21b6; /* Dark text */
+            box-shadow: none;
+            border-radius: 0;
+        }
+
+        .flatpickr-day.startRange {
+            border-top-left-radius: 9999px;
+            border-bottom-left-radius: 9999px;
+        }
+        .flatpickr-day.endRange {
+            border-top-right-radius: 9999px;
+            border-bottom-right-radius: 9999px;
+        }
+        .flatpickr-day.startRange.endRange {
+            border-radius: 9999px;
+        }
+        
+        .flatpickr-day.today.inRange {
+             background: #c4b5fd; /* Medium purple for today */
+             border-color: #c4b5fd;
+             color: #4c1d95; /* Dark violet text */
+        }
+        .flatpickr-day.today.startRange,
+        .flatpickr-day.today.endRange {
+            background: #6d28d9;
+            border-color: #6d28d9;
+            color: #fff;
+        }
+        /* --- End "Better" Calendar Styling --- */
+        
+        .flatpickr-month, .flatpickr-weekday, .flatpickr-day {
+            color: #5b21b6; /* text-violet-700 */
+        }
+        .flatpickr-months .flatpickr-prev-month svg, .flatpickr-months .flatpickr-next-month svg {
+            fill: #8b5cf6; /* text-violet-500 */
+        }
+        .flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg {
+            fill: #6d28d9;
+        }
+        .flatpickr-current-month .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month {
+            background-color: #faf5ff;
+            color: #5b21b6;
+        }
+        span.flatpickr-weekday {
+            color: #a78bfa; /* text-violet-400 */
+        }
+    </style>
+</head>
+<body class="bg-violet-50 min-h-screen flex items-center justify-center p-4">
+
+    <!-- Main Content Card -->
+    <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-xl text-center">
+        
+        <!-- Header Title -->
+        <h1 class="text-3xl font-bold text-violet-800 mb-4">
+            Last Seen
+        </h1>
+        <p class="text-violet-500 mb-6">How long has it been?</p>
+
+        <!-- Countdown Timer Display -->
+        <div class="grid grid-cols-4 gap-3 text-violet-900 mb-6">
+            
+            <!-- Days: Removed p-4, added h-24 and items-center -->
+            <div class="bg-violet-100 rounded-lg flex flex-col justify-center items-center h-24">
+                <div id="days" class="text-4xl font-bold">0</div>
+                <div class="text-xs text-violet-600">Days</div>
+            </div>
+            
+            <!-- Hours: Removed p-4, added h-24 and items-center -->
+            <div class="bg-violet-100 rounded-lg flex flex-col justify-center items-center h-24">
+                <div id="hours" class="text-4xl font-bold">0</div>
+                <div class="text-xs text-violet-600">Hours</div>
+            </div>
+            
+            <!-- Minutes: Removed p-4, added h-24 and items-center -->
+            <div class="bg-violet-100 rounded-lg flex flex-col justify-center items-center h-24">
+                <div id="minutes" class="text-4xl font-bold">0</div>
+                <div class="text-xs text-violet-600">Mins</div>
+            </div>
+            
+            <!-- Seconds: Removed p-4, added h-24 and items-center -->
+            <div class="bg-violet-100 rounded-lg flex flex-col justify-center items-center h-24">
+                <div id="seconds" class="text-4xl font-bold">0</div>
+                <div class="text-xs text-violet-600">Secs</div>
+            </div>
+        </div>
+
+        <!-- Last Seen Date Display -->
+        <div class="mb-6">
+            <p class="text-sm text-violet-500">Last seen on:</p>
+            <p id="lastSeenDisplay" class="text-lg font-medium text-violet-700"></p>
+        </div>
+        
+        <!-- Visual Calendar (hidden by default) -->
+        <div id="visualCalendarContainer" class="my-6 hidden">
+            <p class="text-sm text-violet-500 mb-2">Time passed:</p>
+            <!-- This div is the container for the read-only visual calendar -->
+            <div id="visualCalendar"></div>
+        </div>
+        
+        <!-- Input to set new date and time -->
+        <div class="space-y-4">
+            <div>
+                <label for="datetimePicker" class="text-sm font-medium text-violet-500 mb-2 block">
+                    Change Date & Time
+                </label>
+                <!-- This is the native, reliable datetime picker -->
+                <input 
+                    type="datetime-local" 
+                    id="datetimePicker"
+                >
+            </div>
+            
+            <!-- This button works -->
+            <button id="updateButton" class="w-full bg-violet-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-violet-600 transition-colors duration-200">
+                Update Counter
+            </button>
+            
+            <!-- NEW: Button to toggle the visual calendar -->
+            <button id="toggleCalendarButton" class="w-auto mx-auto text-sm text-violet-500 hover:text-violet-700 font-medium py-2 px-3">
+                Show Visual Calendar
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- STATE ---
+        // Current time is Oct 26, 2025. Set default to Oct 14, 2025.
+        let lastSeenDate = new Date(`2025-10-14T18:00:00`);
+        let timerInterval = null;
+        let visualCalendarInstance = null; // To hold the *visual* calendar instance
+
+        // --- DOM ELEMENTS ---
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+        const lastSeenDisplayEl = document.getElementById('lastSeenDisplay');
+        const updateButtonEl = document.getElementById('updateButton');
+        const datetimePickerEl = document.getElementById('datetimePicker');
+        
+        // New elements for visual calendar
+        const toggleCalendarButtonEl = document.getElementById('toggleCalendarButton');
+        const visualCalendarContainerEl = document.getElementById('visualCalendarContainer');
+
+        /**
+         * Gets the start of a given date (00:00:00).
+         */
+        function getStartOfDay(date) {
+            const newDate = new Date(date);
+            newDate.setHours(0, 0, 0, 0);
+            return newDate;
+        }
+
+        /**
+         * Calculates and updates the countdown display.
+         */
+        function updateCounter() {
+            const now = new Date();
+            const diff = now.getTime() - lastSeenDate.getTime();
+
+            // Handle case where the set time is in the future
+            if (diff < 0) {
+                daysEl.textContent = '0';
+                hoursEl.textContent = '0';
+                minutesEl.textContent = '0';
+                secondsEl.textContent = '0';
+                
+                // Update visual calendar for future date
+                updateVisualCalendar();
+                return;
+            }
+
+            // Calculate time parts
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            // Update the HTML
+            daysEl.textContent = String(days).padStart(2, '0');
+            hoursEl.textContent = String(hours).padStart(2, '0');
+            minutesEl.textContent = String(minutes).padStart(2, '0');
+            secondsEl.textContent = String(seconds).padStart(2, '0');
+            
+            // Check if we need to update the visual calendar (e.g., at midnight)
+            const todayStart = getStartOfDay(now);
+            const lastSeenStart = getStartOfDay(lastSeenDate);
+            if (visualCalendarInstance) {
+                 const currentRange = visualCalendarInstance.selectedDates;
+                 if (currentRange.length < 2 || currentRange[1].getTime() !== todayStart.getTime()) {
+                     // If range is not set or end date is not today, update it
+                     if (lastSeenStart <= todayStart) {
+                        updateVisualCalendar();
+                     }
+                 }
+            }
+        }
+
+        /**
+         * Updates the "Last Seen" display text with a friendly format.
+         */
+        function updateFriendlyDisplay() {
+             lastSeenDisplayEl.textContent = lastSeenDate.toLocaleString(undefined, {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
+        }
+        
+        /**
+         * Updates the visual calendar's date range
+         */
+        function updateVisualCalendar() {
+            if (!visualCalendarInstance) return;
+            
+            const now = new Date();
+            const todayStart = getStartOfDay(now);
+            const lastSeenStart = getStartOfDay(lastSeenDate);
+            
+            let newRange = [lastSeenStart, todayStart];
+            if (lastSeenStart.getTime() > todayStart.getTime()) {
+                // Future date: Set range to just the single future date
+                newRange = [lastSeenStart];
+            }
+            
+            visualCalendarInstance.setDate(newRange, false);
+            visualCalendarInstance.jumpToDate(lastSeenStart); // Focus calendar on the start date
+        }
+
+        /**
+         * Formats a Date object into 'YYYY-MM-DDTHH:MM' for the datetime-local input.
+         */
+        function formatDateForInput(date) {
+            const tempDate = new Date(date.getTime());
+            tempDate.setMinutes(tempDate.getMinutes() - tempDate.getTimezoneOffset());
+            try {
+                const localISOString = tempDate.toISOString().slice(0, 16);
+                return localISOString;
+            } catch (e) {
+                console.error("Error formatting date:", e);
+                return '';
+            }
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            // Set the friendly display text
+            updateFriendlyDisplay();
+            
+            // Set the initial value of the date/time picker
+            datetimePickerEl.value = formatDateForInput(lastSeenDate);
+
+            // Initialize the VISUAL calendar (for display)
+            try {
+                visualCalendarInstance = flatpickr("#visualCalendar", {
+                    inline: true,
+                    mode: 'range',
+                    showMonths: 1,
+                });
+                // Set its initial range
+                updateVisualCalendar();
+            } catch (e) {
+                console.error("Could not initialize visual calendar:", e);
+                // Hide the toggle button if flatpickr fails to load
+                toggleCalendarButtonEl.classList.add('hidden');
+            }
+
+
+            // Attach event listener to the update button
+            updateButtonEl.addEventListener('click', () => {
+                if (!datetimePickerEl.value) {
+                    return;
+                }
+                
+                // 1. Get the new date from the picker
+                lastSeenDate = new Date(datetimePickerEl.value);
+                
+                // 2. Refresh the friendly display
+                updateFriendlyDisplay();
+                
+                // 3. Update the visual calendar
+                updateVisualCalendar();
+                
+                // 4. Run counter immediately
+                updateCounter(); 
+                
+                // 5. Restart the 1-second interval timer
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(updateCounter, 1000);
+            });
+            
+            // Attach event listener for the toggle button
+            toggleCalendarButtonEl.addEventListener('click', () => {
+                const isHidden = visualCalendarContainerEl.classList.toggle('hidden');
+                if (isHidden) {
+                    toggleCalendarButtonEl.textContent = 'Show Visual Calendar';
+                } else {
+                    toggleCalendarButtonEl.textContent = 'Hide Visual Calendar';
+                    // Refresh calendar range when showing it
+                    updateVisualCalendar();
+                }
+            });
+
+            // Start the counter
+            updateCounter(); // Run once on load
+            timerInterval = setInterval(updateCounter, 1000);
+        }
+
+        // Run the app once the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+
+
